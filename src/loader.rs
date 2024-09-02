@@ -1,11 +1,10 @@
+use crate::common::BufReaderExt;
 use anyhow::{bail, Result};
 use bitflags::bitflags;
 use byteorder::{ReadBytesExt, LE};
 use flate2::bufread::ZlibDecoder;
 use std::io::{BufRead, BufReader, Cursor, Read, Seek, SeekFrom};
 use thiserror::Error;
-
-use crate::common::BufReaderExt;
 
 #[derive(Error, Debug)]
 pub enum ModuleError {
