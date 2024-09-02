@@ -10,13 +10,13 @@ use crate::common::BufReaderExt;
 #[derive(Error, Debug)]
 pub enum ModuleError {
     #[error("Incorrect module version! Should be either 23 or 27. Found: {0}")]
-    InvalidModuleVersionError(u32),
+    InvalidModuleVersion(u32),
     #[error("Module magic doesn't match! Expected 'mohd' found: {0}")]
-    InvalidModuleMagicError(String),
+    InvalidModuleMagic(String),
     #[error("Tag size is zero! This should not happen.")]
-    EmptyTagError,
+    EmptyTag,
     #[error("Non-compressed single block tag found! This should not happen.")]
-    NonCompressedSingleTagError,
+    NonCompressedSingleTag,
 }
 
 #[derive(Default, Debug)]
@@ -38,11 +38,11 @@ impl ModuleHeader {
     pub fn read<R: BufRead + BufReaderExt>(&mut self, reader: &mut R) -> Result<()> {
         self.magic = reader.read_fixed_string(4)?;
         if self.magic != "mohd" {
-            bail!(ModuleError::InvalidModuleMagicError(self.magic.clone()))
+            bail!(ModuleError::InvalidModuleMagic(self.magic.clone()))
         }
         self.version = reader.read_u32::<LE>()?;
         if self.version != 27 && self.version != 23 {
-            bail!(ModuleError::InvalidModuleVersionError(self.version))
+            bail!(ModuleError::InvalidModuleVersion(self.version))
         }
         self.module_id = reader.read_u64::<LE>()?;
         self.item_count = reader.read_u32::<LE>()?;
@@ -221,7 +221,7 @@ impl H5Module {
     pub fn read_tag<R: BufRead + Seek>(&mut self, index: u32, reader: &mut R) -> Result<()> {
         let file = &mut self.files[index as usize];
         if file.total_uncompressed_size == 0 {
-            bail!(ModuleError::EmptyTagError)
+            bail!(ModuleError::EmptyTag)
         }
 
         let block_offset = file.data_offset + self.data_offset;
@@ -267,7 +267,7 @@ impl H5Module {
                 decompressor.read_exact(&mut decompressed_buffer)?;
                 file.data = decompressed_buffer;
             } else {
-                bail!(ModuleError::NonCompressedSingleTagError)
+                bail!(ModuleError::NonCompressedSingleTag)
             }
         }
 
