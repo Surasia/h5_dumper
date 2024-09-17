@@ -20,15 +20,22 @@ struct H5ModuleLoader {
     /// Path to save tags to.
     #[arg(short, long)]
     save_path: String,
+    /// Optional: Specify tag class to export.
+    #[arg(short, long)]
+    tag_class: Option<String>,
 }
 
-fn read_module(file_name: &Path, save_path: &String) -> Result<()> {
+fn read_module(file_name: &Path, save_path: &String, tag_class: &Option<String>) -> Result<()> {
     let file = File::open(file_name)?;
     let mut reader = BufReader::new(file);
     let mut module = H5Module::default();
 
     module.read(&mut reader)?;
+    let filter_class = tag_class.is_some();
     for file in module.files {
+        if filter_class && file.group_tag != tag_class.clone().unwrap() {
+            continue;
+        }
         let file_p = Path::new("..")
             .join(save_path)
             .join(file.name.replace(":", "_").replace("*", "_"));
@@ -48,7 +55,7 @@ fn main() -> Result<()> {
     {
         if file.path().to_str().unwrap().ends_with("module") {
             println!("Dumping module: {}", file.path().to_str().unwrap());
-            read_module(file.path(), &arguments.save_path)?;
+            read_module(file.path(), &arguments.save_path, &arguments.tag_class)?;
         }
     }
     Ok(())
